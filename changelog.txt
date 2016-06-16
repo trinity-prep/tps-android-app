@@ -1,0 +1,5 @@
+Version 0.1.0; State: Closed Alpha
+*       - Added schedule for seeing current period - DM
+*       - Added schedule refreshing for automatic period changes - DM
+*       - Added settings menu and option to choose between MS and US - DM
+*       - Added documentation to code and GitHub - DM

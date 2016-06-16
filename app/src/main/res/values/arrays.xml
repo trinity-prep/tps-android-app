@@ -1,0 +1,10 @@
+<resources>
+    <string-array name="school_list">
+        <item>Middle School</item>
+        <item>Upper School</item>
+    </string-array>
+    <string-array name="school_list_values">
+        <item>MS</item>
+        <item>US</item>
+    </string-array>
+</resources>
