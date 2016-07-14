@@ -15,10 +15,11 @@ import java.util.Calendar;
 
 /**
  * Created by Dominic martinez on 6/13/2016.
+ *
  * Constructor:
  *      ScheduleSetter (Activity mainActivity //pass on MainActivity in order to set schedule text)
- * Methods:
  *
+ * Methods:
  *      public String fetchXML() {
  *          Returns letter A-F corresponding to current day type
  *          Returns null if no day is found
