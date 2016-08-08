@@ -65,15 +65,18 @@ public class ScheduleSetter {
     private boolean refreshRunning;
     //True when in content_main, false otherwise
     public boolean inMain;
+    //
+    Thread XMLThread;
 
     public ScheduleSetter (Activity mainActivity) {
         activity = mainActivity;
         running = false;
+        refreshRunning = false;
     }
 
     /* Establishes connection to RSS feed, creates XML parser, passes parser to parseXML()
     * Returns day type as a string A-F or null upon error */
-    public String fetchXML() {
+    public void fetchXML() {
         dayType = null;
         TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
         schedule.setText("Loading Schedule");
@@ -111,16 +114,17 @@ public class ScheduleSetter {
 
                     //Get dayType A-F
                     dayType = parseXML(myparser);
-
+                    setSchedule(dayType);
+                    startRefreshThread();
                     stream.close();
                 } catch (Exception e) {
                     Log.e("Scheduler", "Cannot connect to server", e);
                 }
+                running = false;
             }
         });
         running = true;
         thread.start();
-        return dayType;
     }
 
     public void startRefreshThread() {
@@ -131,22 +135,19 @@ public class ScheduleSetter {
         Thread th = new Thread(new Runnable() {
             public void run() {
                 while (dayType != null) {
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if(dayType != null && !running && inMain) {
-                                setSchedule(dayType);
-                            }
-                        }
-                    });
+                    Log.d("Refresh", "Running");
+                    if(dayType != null && !running && inMain) {
+                        setSchedule(dayType);
+                    }
                     try {
                         Calendar date = Calendar.getInstance();
-                        Thread.sleep(60000 - (date.get(Calendar.SECOND)));
+                        Thread.sleep(60000 - (date.get(Calendar.SECOND) * 1000));
                     }
                     catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
+                refreshRunning = false;
             }
         });
         th.start();
@@ -155,16 +156,23 @@ public class ScheduleSetter {
 
     public void setSchedule(String dayType) {
         running = true;
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(activity);
-        String schoolPref = sharedPref.getString(SettingsFragment.KEY_SCHOOL_PREF, "");
-        if(schoolPref.equals("US")) {
-            setScheduleUS(dayType);
-        } else if(schoolPref.equals("MS")){
-            setScheduleMS(dayType);
-        } else {
-            TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
-            schedule.setText("Settings error, please try again later");
-        }
+        final String DAY_TYPE;
+        DAY_TYPE = dayType;
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(activity);
+                String schoolPref = sharedPref.getString(SettingsFragment.KEY_SCHOOL_PREF, "");
+                if(schoolPref.equals("US")) {
+                    setScheduleUS(DAY_TYPE);
+                } else if(schoolPref.equals("MS")){
+                    setScheduleMS(DAY_TYPE);
+                } else {
+                    TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
+                    schedule.setText("Settings error, please try again later");
+                }
+            }
+        });
     }
 
     //**PRECONDITION** Uppercase letter from A-F
@@ -399,12 +407,16 @@ public class ScheduleSetter {
             boolean foundDayType = false;
             String dayType = null;
             while (event != XmlPullParser.END_DOCUMENT) {
+                Log.d("Loop", "Ran");
                 switch (event) {
                     case XmlPullParser.TEXT:
                         text = myParser.getText();
+                        Log.d("Text", text);
                         break;
                     case XmlPullParser.END_TAG:
-                        if (myParser.getName().equalsIgnoreCase("title")) {
+                        Log.d("Tag", myParser.getName());
+                        if (myParser.getName().equalsIgnoreCase("title") && text != null) {
+                            Log.d("getDayType", "Ran");
                             if (text.toLowerCase().contains("day a")) {
                                 dayType = "A";
                                 foundDayType = true;
@@ -426,14 +438,23 @@ public class ScheduleSetter {
                             } else {
                                 foundDayType = false;
                             }
+                            Log.d("getDayType", foundDayType+"");
+                            if(dayType != null) {
+                                Log.d("getDayType", dayType);
+                            }
                         } else if (myParser.getName().equalsIgnoreCase("description")) {
+                            Log.d("description", "Ran");
                             String[] calendarMonthsString = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
                             Calendar c = Calendar.getInstance();
-                            String date = c.get(Calendar.DAY_OF_MONTH) + " " + calendarMonthsString[c.get(Calendar.MONTH)];
-                            if (text.toLowerCase().contains(date) && foundDayType) {
-                                return dayType;
+                            String date = "17 aug 2016"; //c.get(Calendar.DAY_OF_MONTH) + " " + calendarMonthsString[c.get(Calendar.MONTH)] + " " + c.get(Calendar.YEAR);
+                            if (text != null) {
+                                if (text.toLowerCase().contains(date) && foundDayType) {
+                                    Log.d("Returned", dayType);
+                                    return dayType;
+                                }
                             }
                         }
+                        Log.d("dayType", "finished");
                         break;
                     default:
                         break;

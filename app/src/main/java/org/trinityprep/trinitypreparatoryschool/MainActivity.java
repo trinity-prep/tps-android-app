@@ -61,15 +61,7 @@ public class MainActivity extends AppCompatActivity
 
         //Call fetchXML to set schedule_text to current period if scheduler is not currently running
         if(!schedule.running) {
-            dayType = schedule.fetchXML();
-            if(dayType != null) {
-                schedule.setSchedule(dayType);
-                schedule.startRefreshThread();
-            } else {
-                TextView text = (TextView) findViewById(R.id.schedule_text);
-                text.setText("Unable to find day type, please try again later");
-            }
-            schedule.running = false;
+            schedule.fetchXML();
         }
     }
 
@@ -119,15 +111,7 @@ public class MainActivity extends AppCompatActivity
             //Refreshes schedule
             //Call fetchXML to set schedule_text to current period if in main content and scheduler is not currently running
             if(!schedule.running && inMain) {
-                dayType = schedule.fetchXML();
-                if(dayType != null) {
-                    schedule.setSchedule(dayType);
-                    schedule.startRefreshThread();
-                } else {
-                    TextView text = (TextView) findViewById(R.id.schedule_text);
-                    text.setText("Unable to find day type, please try again later");
-                }
-                schedule.running = false;
+                schedule.fetchXML();
             }
             View content = findViewById(R.id.drawer_layout);
         }
@@ -149,21 +133,12 @@ public class MainActivity extends AppCompatActivity
             inMain = true;
             schedule.inMain = true;
             if(!schedule.running) {
-                dayType = schedule.fetchXML();
                 if(dayType != null) {
                     schedule.setSchedule(dayType);
                     schedule.startRefreshThread();
                 } else {
-                    dayType = schedule.fetchXML();
-                    if(dayType != null) {
-                        schedule.setSchedule(dayType);
-                        schedule.startRefreshThread();
-                    } else {
-                        TextView text = (TextView) findViewById(R.id.schedule_text);
-                        text.setText("Unable to find day type, please try again later");
-                    }
+                    schedule.fetchXML();
                 }
-                schedule.running = false;
             }
         } else if (id == R.id.nav_news) {
 
