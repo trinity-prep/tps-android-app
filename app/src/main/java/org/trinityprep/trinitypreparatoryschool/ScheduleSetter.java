@@ -454,7 +454,7 @@ public class ScheduleSetter {
             stub.setLayoutResource(R.layout.schedule_table_text);
             // Add view stub to schedule_table
             try {
-                tl.addView(stub);
+                tl.addView(stub, new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT));
             } catch(Exception e) {
                 Toast.makeText(activity, "Critical error3",
                         Toast.LENGTH_LONG).show();
@@ -470,7 +470,7 @@ public class ScheduleSetter {
                 return;
             }
             if(activeIndex == i) {
-                trText.getBackground().setColorFilter(Color.parseColor("#FF69F0AE"), PorterDuff.Mode.CLEAR);
+                trText.setBackgroundColor(Color.parseColor("#FF69F0AE"));
             }
             // Get period TextView and set parameters
             TextView periodTV = (TextView) trText.getChildAt(0);
