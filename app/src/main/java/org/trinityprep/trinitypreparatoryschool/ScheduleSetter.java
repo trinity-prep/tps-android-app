@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import java.io.InputStream;
@@ -170,7 +172,6 @@ public class ScheduleSetter {
         th.start();
     }
 
-
     public void setSchedule(String dayType) {
         running = true;
         final String DAY_TYPE = dayType;
@@ -185,7 +186,8 @@ public class ScheduleSetter {
                     setScheduleMS(DAY_TYPE);
                 } else {
                     TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
-                    schedule.setText("Settings error");
+                    Toast.makeText(activity, "Settings error",
+                            Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -270,38 +272,38 @@ public class ScheduleSetter {
                 index = 5;
                 break;
             default:
-                TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
-                schedule.setText("Day type error");
+                Toast.makeText(activity, "Day type error",
+                        Toast.LENGTH_LONG).show();
                 return;
         }
-
-        TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
         //Get current # of minutes since 12:00 AM
         Calendar date = Calendar.getInstance();
-        int minute = (date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
+        int minute = 700; //(date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
 
         Integer[] startTime = startTimes.get(index);
         Integer[] endTime = endTimes.get(index);
         String[] periodsDay = periods.get(index);
 
         if(minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
-            schedule.setText("School is out");
+            Toast.makeText(activity, "School is out",
+                    Toast.LENGTH_LONG).show();
             return;
         }
 
-
-
+        // Get current period
+        int currentPeriod = -1;
         for(int i = 0; i < startTime.length; i++) {
             if(minute < startTime[i]) {
                 if(minute < endTime[i - 1]) {
-                    schedule.setText("It is currently "+ periodsDay[i-1]);
-                    return;
+                    currentPeriod = i-1;
                 } else {
-                    schedule.setText("Going from " + periodsDay[i-1] + " to " + periodsDay[i]);
-                    return;
+                    currentPeriod = i;
                 }
             }
         }
+
+        MainActivity main = new MainActivity();
+        main.createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), currentPeriod);
     }
 
     //**PRECONDITION** Uppercase letter from A-F
@@ -383,13 +385,12 @@ public class ScheduleSetter {
                 index = 5;
                 break;
             default:
-                TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
-                schedule.setText("Invalid day type, please try again later");
+                Toast.makeText(activity, "Day type error",
+                        Toast.LENGTH_LONG).show();
                 return;
         }
 
-        TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
-        //Get current minute in day
+        //Get current # of minutes since 12:00 AM
         Calendar date = Calendar.getInstance();
         int minute = (date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
 
@@ -397,22 +398,28 @@ public class ScheduleSetter {
         Integer[] endTime = endTimes.get(index);
         String[] periodsDay = periods.get(index);
 
-        if(minute < startTime[0] || minute > endTime[endTime.length - 1]) {
-            schedule.setText("School is out");
+        if(minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
+            Toast.makeText(activity, "School is out",
+                    Toast.LENGTH_LONG).show();
             return;
         }
 
+        // Get current period
+        int currentPeriod = -1;
         for(int i = 0; i < startTime.length; i++) {
             if(minute < startTime[i]) {
                 if(minute < endTime[i - 1]) {
-                    schedule.setText("It is currently "+ periodsDay[i-1]);
+                    currentPeriod = i-1;
                     return;
                 } else {
-                    schedule.setText("Going from " + periodsDay[i-1] + " to " + periodsDay[i]);
+                    currentPeriod = i;
                     return;
                 }
             }
         }
+
+        MainActivity main = new MainActivity();
+        main.createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), currentPeriod);
     }
 
     private String parseXML(XmlPullParser myParser) {
@@ -425,16 +432,12 @@ public class ScheduleSetter {
             boolean foundDayType = false;
             String dayType = null;
             while (event != XmlPullParser.END_DOCUMENT) {
-                Log.d("Loop", "Ran");
                 switch (event) {
                     case XmlPullParser.TEXT:
                         text = myParser.getText();
-                        Log.d("Text", text);
                         break;
                     case XmlPullParser.END_TAG:
-                        Log.d("Tag", myParser.getName());
                         if (myParser.getName().equalsIgnoreCase("title") && text != null) {
-                            Log.d("getDayType", "Ran");
                             if (text.toLowerCase().contains("day a")) {
                                 dayType = "A";
                                 foundDayType = true;
@@ -456,23 +459,16 @@ public class ScheduleSetter {
                             } else {
                                 foundDayType = false;
                             }
-                            Log.d("getDayType", foundDayType+"");
-                            if(dayType != null) {
-                                Log.d("getDayType", dayType);
-                            }
                         } else if (myParser.getName().equalsIgnoreCase("description")) {
-                            Log.d("description", "Ran");
                             String[] calendarMonthsString = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
                             Calendar c = Calendar.getInstance();
-                            String date = " " + c.get(Calendar.DAY_OF_MONTH) + " " + calendarMonthsString[c.get(Calendar.MONTH)] + " " + c.get(Calendar.YEAR);
+                            String date = " 17 aug 2016"; //" " + c.get(Calendar.DAY_OF_MONTH) + " " + calendarMonthsString[c.get(Calendar.MONTH)] + " " + c.get(Calendar.YEAR);
                             if (text != null) {
                                 if (text.toLowerCase().contains(date) && foundDayType) {
-                                    Log.d("Returned", dayType);
                                     return dayType;
                                 }
                             }
                         }
-                        Log.d("dayType", "finished");
                         break;
                     default:
                         break;

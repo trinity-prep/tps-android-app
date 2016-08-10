@@ -6,4 +6,5 @@
     <color name="colorWhite">#fbfbfb</color>
     <color name="text">#424242</color>
     <color name="divider">#0c000000</color>
+    <color name="activeBackground">#FF69F0AE</color>
 </resources>

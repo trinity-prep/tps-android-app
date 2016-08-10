@@ -1,8 +1,11 @@
 package org.trinityprep.trinitypreparatoryschool;
 
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.widget.ViewUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.support.design.widget.NavigationView;
@@ -17,6 +20,7 @@ import android.view.ViewGroup;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -63,7 +67,7 @@ public class MainActivity extends AppCompatActivity
      */
     private GoogleApiClient client;
     //Contains array of ids for rows in schedule_table
-    private ArrayList<Integer> scheduleRowIds;
+    private static ArrayList<Integer> scheduleRowIds = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,26 +94,57 @@ public class MainActivity extends AppCompatActivity
     }
 
     /* PRECONDITION: periods[] and times[] are of the same length
-     * POSTCONDITION: Creates a table containing all periods and times */
-    public void createScheduleTable(String[] periods, String[] times) {
-        for(int i = 0; (i < periods.length && i < times.length); i++) {
-            /* Find Tablelayout defined in content_main.xml */
+     * POSTCONDITION: Creates a table containing all periods and times
+     * if a schedule table is already created (scheduleRowIds != null), delete and replace existing schedule table*/
+    public void createScheduleTable(String[] periods, Integer[] startTimes, Integer[] endTimes, int activeIndex) {
+        for(int i = 0; (i < periods.length && i < startTimes.length && i < endTimes.length); i++) {
+            // Find TableLayout defined in content_main.xml
             TableLayout tl = (TableLayout) findViewById(R.id.schedule_table);
-            /* Get TableRow that contains period and time TextViews */
+            // If schedule table already exists, delete all children of schedule_table
+            if(scheduleRowIds != null) {
+                try {
+                    tl.removeAllViews();
+                } catch(Exception e) {
+                    Toast.makeText(this, "Critical error",
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+            }
+            // Get TableRow that contains period and time TextViews
             TableRow trText = (TableRow) findViewById(R.id.schedule_row_text_template);
             int rowId = View.generateViewId();
             scheduleRowIds.add(rowId);
-            trText.setId(rowId);
-            /* Get period TextView and set parameters */
+            try {
+                trText.setId(rowId);
+            } catch(Exception e) {
+                Toast.makeText(this, "Critical error",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+            if(activeIndex == i) {
+                trText.getBackground().setColorFilter(Color.parseColor("#FF69F0AE"), PorterDuff.Mode.CLEAR);
+            }
+            // Get period TextView and set parameters
             TextView periodTV = (TextView) trText.getChildAt(0);
             periodTV.setId(View.generateViewId());
             periodTV.setText(periods[i]);
-            /* Get time TextView */
+            // Get time TextView
             TextView timeTV = (TextView) trText.getChildAt(1);
             timeTV.setId(View.generateViewId());
-            timeTV.setText(times[i]);
-            /* Add periodTextView to row. */
-            /* Add row to TableLayout. */
+            timeTV.setText(startTimes[i] + "-" + endTimes[i]);
+            // Add trText to schedule_table
+            try {
+                tl.addView(trText, new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT));
+            } catch(Exception e) {
+                Toast.makeText(this, "Critical error",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+            // Add divider if not last
+            if(i < periods.length - 2) {
+                TableRow trDivider = (TableRow) findViewById(R.id.schedule_row_divider);
+                tl.addView(trDivider, new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.MATCH_PARENT));
+            }
         }
     }
 
