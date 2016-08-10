@@ -21,28 +21,32 @@ import java.util.Calendar;
  *
  * Methods:
  *      public String fetchXML() {
- *          Returns letter A-F corresponding to current day type
- *          Returns null if no day is found
- *          Logs error message if unable to connect and returns null
+ *          Creates connection to XML file and runs helper methods to set schedule
+ *          Logs error message if unable to connect
+ *      }
+ *
+ *      public void noSchedule() {
+ *          Sets schedule text to "No Schedule" if no valid schedule is found on server
  *      }
  *
  *      public void startRefreshThread() {
  *          If another refresh thread is not currently running, starts a refresh thread
- *          Every time there is a minute change, if dayType != null && !running && inMain, re-run setSchedule
+ *          Every time there is a minute change, if (dayType != null && !running && inMain), re-run setSchedule
+ *          Based on Thread.sleep(60000 - (date.get(Calendar.SECOND) * 1000));
  *      }
  *
  *      public void setSchedule(String dayType) {
  *          Depending on application settings, calls setScheduleMS(dayType) or setScheduleUS(dayType)
- *          Sets schedule_text to an error if preferences are invalid
+ *          Sets schedule_title to an error if preferences are invalid
  *      }
  *
  *      private void setScheduleUS(String dayType) {
- *          Given a valid day type, sets schedule_text to the current period for Upper School
+ *          Given a valid day type, sets schedule_title to the current period for Upper School
  *          If between periods, outputs "Going from (period1) to (period2)
  *      }
  *
  *      private void setScheduleMS(String dayType) {
- *          Given a valid day type, sets schedule_text to the current period for Middle School
+ *          Given a valid day type, sets schedule_title to the current period for Middle School
  *          If between periods, outputs "Going from (period1) to (period2)
  *      }
  *
@@ -53,7 +57,7 @@ import java.util.Calendar;
  */
 public class ScheduleSetter {
 
-    //Activity used to set schedule_text
+    //Activity used to set schedule_title
     private Activity activity;
     //URL to grab XML from
     private final String calendarURL = "http://www.trinityprep.org/data/calendar/rsscache/calendar_1516.rss";
@@ -78,7 +82,7 @@ public class ScheduleSetter {
     * Returns day type as a string A-F or null upon error */
     public void fetchXML() {
         dayType = null;
-        TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
+        TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
         schedule.setText("Loading Schedule");
         Thread thread = new Thread(new Runnable() {
             @Override
@@ -114,8 +118,12 @@ public class ScheduleSetter {
 
                     //Get dayType A-F
                     dayType = parseXML(myparser);
-                    setSchedule(dayType);
-                    startRefreshThread();
+                    if(dayType != null) {
+                        setSchedule(dayType);
+                        startRefreshThread();
+                    } else {
+                        noSchedule();
+                    }
                     stream.close();
                 } catch (Exception e) {
                     Log.e("Scheduler", "Cannot connect to server", e);
@@ -127,6 +135,16 @@ public class ScheduleSetter {
         thread.start();
     }
 
+    public void noSchedule() {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                    TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
+                    schedule.setText("No Schedule");
+            }
+        });
+    }
+
     public void startRefreshThread() {
         if(refreshRunning) {
             return;
@@ -135,7 +153,6 @@ public class ScheduleSetter {
         Thread th = new Thread(new Runnable() {
             public void run() {
                 while (dayType != null) {
-                    Log.d("Refresh", "Running");
                     if(dayType != null && !running && inMain) {
                         setSchedule(dayType);
                     }
@@ -156,8 +173,7 @@ public class ScheduleSetter {
 
     public void setSchedule(String dayType) {
         running = true;
-        final String DAY_TYPE;
-        DAY_TYPE = dayType;
+        final String DAY_TYPE = dayType;
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -168,15 +184,15 @@ public class ScheduleSetter {
                 } else if(schoolPref.equals("MS")){
                     setScheduleMS(DAY_TYPE);
                 } else {
-                    TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
-                    schedule.setText("Settings error, please try again later");
+                    TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
+                    schedule.setText("Settings error");
                 }
             }
         });
     }
 
     //**PRECONDITION** Uppercase letter from A-F
-    //**POSTCONDITION** schedule_text is set to current period for US
+    //**POSTCONDITION** schedule_title is set to current period for US
     private void setScheduleUS(String dayType) {
         //Start and end times of periods on different day types in minutes since 0000 (12 AM)
         Integer[] dayAStart = {470, 479, 527, 575, 604, 652, 700, 749, 796, 844, 888};
@@ -254,13 +270,13 @@ public class ScheduleSetter {
                 index = 5;
                 break;
             default:
-                TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
-                schedule.setText("Invalid day type, please try again later");
+                TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
+                schedule.setText("Day type error");
                 return;
         }
 
-        TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
-        //Get current minute in day
+        TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
+        //Get current # of minutes since 12:00 AM
         Calendar date = Calendar.getInstance();
         int minute = (date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
 
@@ -268,10 +284,12 @@ public class ScheduleSetter {
         Integer[] endTime = endTimes.get(index);
         String[] periodsDay = periods.get(index);
 
-        if(minute < startTime[0] || minute > endTime[endTime.length - 1]) {
+        if(minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
             schedule.setText("School is out");
             return;
         }
+
+
 
         for(int i = 0; i < startTime.length; i++) {
             if(minute < startTime[i]) {
@@ -287,7 +305,7 @@ public class ScheduleSetter {
     }
 
     //**PRECONDITION** Uppercase letter from A-F
-    //**POSTCONDITION** schedule_text is set to current period for MS
+    //**POSTCONDITION** schedule_title is set to current period for MS
     private void setScheduleMS(String dayType) {
         //Start and end times of periods on different day types in minutes since 0000 (12 AM)
         Integer[] dayAStart = {470, 479, 527, 575, 604, 652, 700, 749, 796, 844, 888};
@@ -365,12 +383,12 @@ public class ScheduleSetter {
                 index = 5;
                 break;
             default:
-                TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
+                TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
                 schedule.setText("Invalid day type, please try again later");
                 return;
         }
 
-        TextView schedule = (TextView) activity.findViewById(R.id.schedule_text);
+        TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
         //Get current minute in day
         Calendar date = Calendar.getInstance();
         int minute = (date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
@@ -446,7 +464,7 @@ public class ScheduleSetter {
                             Log.d("description", "Ran");
                             String[] calendarMonthsString = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
                             Calendar c = Calendar.getInstance();
-                            String date = "17 aug 2016"; //c.get(Calendar.DAY_OF_MONTH) + " " + calendarMonthsString[c.get(Calendar.MONTH)] + " " + c.get(Calendar.YEAR);
+                            String date = " " + c.get(Calendar.DAY_OF_MONTH) + " " + calendarMonthsString[c.get(Calendar.MONTH)] + " " + c.get(Calendar.YEAR);
                             if (text != null) {
                                 if (text.toLowerCase().contains(date) && foundDayType) {
                                     Log.d("Returned", dayType);

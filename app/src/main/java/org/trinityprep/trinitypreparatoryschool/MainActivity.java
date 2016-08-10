@@ -1,6 +1,9 @@
 package org.trinityprep.trinitypreparatoryschool;
 
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.widget.ViewUtils;
+import android.util.TypedValue;
 import android.view.Menu;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -10,7 +13,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
+
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
+
+import org.w3c.dom.Text;
+
+import java.util.ArrayList;
 
 /* Created by Trinity Preparatory School
 *
@@ -36,14 +50,21 @@ import android.widget.TextView;
 */
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener
-{
+        implements NavigationView.OnNavigationItemSelectedListener {
     //Object for scheduler
     ScheduleSetter schedule = new ScheduleSetter(this);
     //True when content view is activity_main, false otherwise
     private boolean inMain = true;
     //Contains dayType
     private String dayType = null;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
+    //Contains array of ids for rows in schedule_table
+    private ArrayList<Integer> scheduleRowIds;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //Initialize activity view, toolbar, and navbar
@@ -59,9 +80,36 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        //Call fetchXML to set schedule_text to current period if scheduler is not currently running
-        if(!schedule.running) {
+        //Call fetchXML to set schedule_title to current period if scheduler is not currently running
+        if (!schedule.running) {
             schedule.fetchXML();
+        }
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+    }
+
+    /* PRECONDITION: periods[] and times[] are of the same length
+     * POSTCONDITION: Creates a table containing all periods and times */
+    public void createScheduleTable(String[] periods, String[] times) {
+        for(int i = 0; (i < periods.length && i < times.length); i++) {
+            /* Find Tablelayout defined in content_main.xml */
+            TableLayout tl = (TableLayout) findViewById(R.id.schedule_table);
+            /* Get TableRow that contains period and time TextViews */
+            TableRow trText = (TableRow) findViewById(R.id.schedule_row_text_template);
+            int rowId = View.generateViewId();
+            scheduleRowIds.add(rowId);
+            trText.setId(rowId);
+            /* Get period TextView and set parameters */
+            TextView periodTV = (TextView) trText.getChildAt(0);
+            periodTV.setId(View.generateViewId());
+            periodTV.setText(periods[i]);
+            /* Get time TextView */
+            TextView timeTV = (TextView) trText.getChildAt(1);
+            timeTV.setId(View.generateViewId());
+            timeTV.setText(times[i]);
+            /* Add periodTextView to row. */
+            /* Add row to TableLayout. */
         }
     }
 
@@ -109,8 +157,8 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.action_refresh) {
             //Refreshes schedule
-            //Call fetchXML to set schedule_text to current period if in main content and scheduler is not currently running
-            if(!schedule.running && inMain) {
+            //Call fetchXML to set schedule_title to current period if in main content and scheduler is not currently running
+            if (!schedule.running && inMain) {
                 schedule.fetchXML();
             }
             View content = findViewById(R.id.drawer_layout);
@@ -132,8 +180,8 @@ public class MainActivity extends AppCompatActivity
             //Refreshes schedule without fetching XML if valid day type is already found, otherwise refreshes normally
             inMain = true;
             schedule.inMain = true;
-            if(!schedule.running) {
-                if(dayType != null) {
+            if (!schedule.running) {
+                if (dayType != null) {
                     schedule.setSchedule(dayType);
                     schedule.startRefreshThread();
                 } else {
@@ -161,5 +209,45 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://org.trinityprep.trinitypreparatoryschool/http/host/path")
+        );
+        AppIndex.AppIndexApi.start(client, viewAction);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://org.trinityprep.trinitypreparatoryschool/http/host/path")
+        );
+        AppIndex.AppIndexApi.end(client, viewAction);
+        client.disconnect();
     }
 }

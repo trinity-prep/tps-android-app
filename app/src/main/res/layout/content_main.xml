@@ -22,24 +22,24 @@
         android:id="@+id/ll_auction"
         android:paddingBottom="10dp">
 
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="5dp"
-            android:src="@drawable/tps_logo"
-            android:scaleType="fitCenter"
-            android:adjustViewBounds="true" />
-
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="32sp"
-            android:layout_weight="5"
-            android:paddingTop="20dp"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text"
+            android:paddingTop="13dp"
+            android:paddingBottom="13dp"
             android:gravity="center_horizontal"
-            android:id="@+id/schedule_text"
+            android:id="@+id/schedule_title"
             android:text="@string/loading_schedule"
                />
+        <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/schedule_table">
+
+        </TableLayout>
 
     </LinearLayout>
 </RelativeLayout>
