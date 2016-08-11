@@ -21,6 +21,7 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewFlipper;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -83,7 +84,6 @@ public class MainActivity extends AppCompatActivity
         toggle.syncState();
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
         //Call fetchXML to set schedule_title to current period if scheduler is not currently running
         if (!schedule.running) {
             schedule.fetchXML();
@@ -195,8 +195,10 @@ public class MainActivity extends AppCompatActivity
             //Call fetchXML to set schedule_title to current period if in main content and scheduler is not currently running
             if (!schedule.running && inMain) {
                 schedule.fetchXML();
+            } else {
+                Toast.makeText(this, "Not in schedule",
+                        Toast.LENGTH_LONG).show();
             }
-            View content = findViewById(R.id.drawer_layout);
         }
 
         return super.onOptionsItemSelected(item);
@@ -209,19 +211,15 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_schedule) {
-            //Change content view to main
-            setContentView(R.layout.activity_main);
-            navView();
             //Refreshes schedule without fetching XML if valid day type is already found, otherwise refreshes normally
             inMain = true;
             schedule.inMain = true;
+            View settingsFragment = findViewById(R.id.settings_fragement);
+            View scheduleView = findViewById(R.id.schedule_include);
+            settingsFragment.setVisibility(View.GONE);
+            scheduleView.setVisibility(View.VISIBLE);
             if (!schedule.running) {
-                if (dayType != null) {
-                    schedule.setSchedule(dayType);
-                    schedule.startRefreshThread();
-                } else {
-                    schedule.fetchXML();
-                }
+                schedule.fetchXML();
             }
         } else if (id == R.id.nav_news) {
 
@@ -231,14 +229,16 @@ public class MainActivity extends AppCompatActivity
 
         } else if (id == R.id.nav_settings) {
             //Change content view to settings
-            setContentView(R.layout.activity_preferences);
             inMain = false;
             schedule.inMain = false;
+            View settingsFragment = findViewById(R.id.settings_fragement);
+            View scheduleView = findViewById(R.id.schedule_include);
+            settingsFragment.setVisibility(View.VISIBLE);
+            scheduleView.setVisibility(View.GONE);
             //Add settings fragment to navigation
             getFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new SettingsFragment())
+                    .replace(R.id.settings_fragement, new SettingsFragment())
                     .commit();
-            navView();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
