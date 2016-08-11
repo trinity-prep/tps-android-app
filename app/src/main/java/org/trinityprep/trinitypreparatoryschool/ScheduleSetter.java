@@ -58,6 +58,12 @@ import java.util.Calendar;
  *          If between periods, outputs "Going from (period1) to (period2)
  *      }
  *
+ *      private void createScheduleTable(String[] periods, Integer[] startTimes, Integer[] endTimes, int activeIndex) {
+ *          Populates schedule table with given data, and highlights the row that corresponds to activeIndex.
+ *          Any invalid activeIndex will cause no row to be highlighted, although it is HIGHLY recommended to
+ *          set activeIndex to -1 if you do not want any row to be highlighted
+ *      }
+ *
  *      private String parseXML(XMLPullParser myParser) {
  *          Given an XMLPullParser connected to the calendar XML feed, finds current day type
  *          If day type for current day found, outputs day A-F. Otherwise, outputs null
@@ -286,15 +292,20 @@ public class ScheduleSetter {
         }
         //Get current # of minutes since 12:00 AM
         Calendar date = Calendar.getInstance();
-        int minute = 700; //(date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
+        int minute = 600; //(date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
 
         Integer[] startTime = startTimes.get(index);
         Integer[] endTime = endTimes.get(index);
         String[] periodsDay = periods.get(index);
 
+        //Set schedule title to current day type
+        TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
+        scheduleText.setText("Day " + dayType);
+
         if(minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
             Toast.makeText(activity, "School is out",
                     Toast.LENGTH_LONG).show();
+            createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), -1);
             return;
         }
 
@@ -408,9 +419,13 @@ public class ScheduleSetter {
         Integer[] endTime = endTimes.get(index);
         String[] periodsDay = periods.get(index);
 
+        //Set schedule title to current day type
+        TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
+        scheduleText.setText("Day " + dayType);
         if(minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
             Toast.makeText(activity, "School is out",
                     Toast.LENGTH_LONG).show();
+            createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), -1);
             return;
         }
 
@@ -435,20 +450,20 @@ public class ScheduleSetter {
      * POSTCONDITION: Creates a table containing all periods and times
      * if a schedule table is already created (scheduleRowIds != null), delete and replace existing schedule table*/
     private void createScheduleTable(String[] periods, Integer[] startTimes, Integer[] endTimes, int activeIndex) {
+        // Find TableLayout defined in content_main.xml
+        TableLayout tl = (TableLayout) activity.findViewById(R.id.schedule_table);
+        // If schedule table already exists, delete all children of schedule_table
+        if(tableExists) {
+            try {
+                tl.removeAllViews();
+            } catch(Exception e) {
+                Toast.makeText(activity, "Critical error",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
         tableExists = true;
         for(int i = 0; (i < periods.length && i < startTimes.length && i < endTimes.length); i++) {
-            // Find TableLayout defined in content_main.xml
-            TableLayout tl = (TableLayout) activity.findViewById(R.id.schedule_table);
-            // If schedule table already exists, delete all children of schedule_table
-            if(tableExists) {
-                try {
-                    tl.removeAllViews();
-                } catch(Exception e) {
-                    Toast.makeText(activity, "Critical error1",
-                            Toast.LENGTH_LONG).show();
-                    return;
-                }
-            }
             // Import TableRow that contains text elements and inflate
             ViewStub stub = new ViewStub(activity);
             stub.setLayoutResource(R.layout.schedule_table_text);
@@ -456,7 +471,7 @@ public class ScheduleSetter {
             try {
                 tl.addView(stub, new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT));
             } catch(Exception e) {
-                Toast.makeText(activity, "Critical error3",
+                Toast.makeText(activity, "Critical error",
                         Toast.LENGTH_LONG).show();
                 return;
             }
@@ -465,11 +480,11 @@ public class ScheduleSetter {
             try {
                 trText.setId(rowId);
             } catch(Exception e) {
-                Toast.makeText(activity, "Critical error2",
+                Toast.makeText(activity, "Critical error",
                         Toast.LENGTH_LONG).show();
                 return;
             }
-            if(activeIndex == i) {
+            if(activeIndex == i && activeIndex != -1) {
                 trText.setBackgroundColor(Color.parseColor("#FF69F0AE"));
             }
             // Get period TextView and set parameters
@@ -477,17 +492,30 @@ public class ScheduleSetter {
             periodTV.setText(periods[i]);
             // Get time TextView
             TextView timeTV = (TextView) trText.getChildAt(1);
-            timeTV.setText(startTimes[i] + "-" + endTimes[i]);
+            int startHour = startTimes[i]/60;
+            int endHour = endTimes[i]/60;
+            int startMinuteInt = startTimes[i]%60;
+            int endMinuteInt = endTimes[i]%60;
+            if(startHour > 12) {
+                startHour -= 12;
+            }
+            if(endHour > 12) {
+                endHour -= 12;
+            }
+            String startMinute = String.format("%02d", startMinuteInt);
+            String endMinute = String.format("%02d", endMinuteInt);
+            timeTV.setText(startHour + ":" + startMinute + "-" + endHour + ":" + endMinute);
 
             // Add divider if not last
-            if(i < periods.length - 2) {
+            if(i < periods.length - 1) {
                 ViewStub stub2 = new ViewStub(activity);
                 stub2.setLayoutResource(R.layout.schedule_table_divider);
                 // Add view stub to schedule_table
                 try {
-                    tl.addView(stub2);
+                    tl.addView(stub2, new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.MATCH_PARENT));
+                    stub2.inflate();
                 } catch(Exception e) {
-                    Toast.makeText(activity, "Critical error3",
+                    Toast.makeText(activity, "Critical error",
                             Toast.LENGTH_LONG).show();
                     return;
                 }
