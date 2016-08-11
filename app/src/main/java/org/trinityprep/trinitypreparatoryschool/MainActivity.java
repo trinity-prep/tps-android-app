@@ -1,5 +1,6 @@
 package org.trinityprep.trinitypreparatoryschool;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
@@ -93,61 +94,6 @@ public class MainActivity extends AppCompatActivity
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
-    /* PRECONDITION: periods[] and times[] are of the same length
-     * POSTCONDITION: Creates a table containing all periods and times
-     * if a schedule table is already created (scheduleRowIds != null), delete and replace existing schedule table*/
-    public void createScheduleTable(String[] periods, Integer[] startTimes, Integer[] endTimes, int activeIndex) {
-        for(int i = 0; (i < periods.length && i < startTimes.length && i < endTimes.length); i++) {
-            // Find TableLayout defined in content_main.xml
-            TableLayout tl = (TableLayout) findViewById(R.id.schedule_table);
-            // If schedule table already exists, delete all children of schedule_table
-            if(scheduleRowIds != null) {
-                try {
-                    tl.removeAllViews();
-                } catch(Exception e) {
-                    Toast.makeText(this, "Critical error",
-                            Toast.LENGTH_LONG).show();
-                    return;
-                }
-            }
-            // Get TableRow that contains period and time TextViews
-            TableRow trText = (TableRow) findViewById(R.id.schedule_row_text_template);
-            int rowId = View.generateViewId();
-            scheduleRowIds.add(rowId);
-            try {
-                trText.setId(rowId);
-            } catch(Exception e) {
-                Toast.makeText(this, "Critical error",
-                        Toast.LENGTH_LONG).show();
-                return;
-            }
-            if(activeIndex == i) {
-                trText.getBackground().setColorFilter(Color.parseColor("#FF69F0AE"), PorterDuff.Mode.CLEAR);
-            }
-            // Get period TextView and set parameters
-            TextView periodTV = (TextView) trText.getChildAt(0);
-            periodTV.setId(View.generateViewId());
-            periodTV.setText(periods[i]);
-            // Get time TextView
-            TextView timeTV = (TextView) trText.getChildAt(1);
-            timeTV.setId(View.generateViewId());
-            timeTV.setText(startTimes[i] + "-" + endTimes[i]);
-            // Add trText to schedule_table
-            try {
-                tl.addView(trText, new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT));
-            } catch(Exception e) {
-                Toast.makeText(this, "Critical error",
-                        Toast.LENGTH_LONG).show();
-                return;
-            }
-            // Add divider if not last
-            if(i < periods.length - 2) {
-                TableRow trDivider = (TableRow) findViewById(R.id.schedule_row_divider);
-                tl.addView(trDivider, new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.MATCH_PARENT));
-            }
-        }
-    }
-
     /* Recreates toolbar and navigation view
      * Call when switching content views
      */
@@ -204,6 +150,26 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    public void setViewVisible(int index) {
+        ArrayList<View> viewArr = new ArrayList<>();
+        /* 0 - Schedule view
+         * 1 - Settings fragment */
+        View scheduleView = findViewById(R.id.schedule_include);
+        viewArr.add(scheduleView);
+        View newsView = findViewById(R.id.news_include);
+        viewArr.add(newsView);
+        View settingsFragment = findViewById(R.id.settings_fragement);
+        viewArr.add(settingsFragment);
+
+        for(int i = 0; i < viewArr.size(); i++) {
+            if(i == index) {
+                viewArr.get(i).setVisibility(View.VISIBLE);
+            } else {
+                viewArr.get(i).setVisibility(View.GONE);
+            }
+        }
+    }
+
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
@@ -211,30 +177,28 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_schedule) {
-            //Refreshes schedule without fetching XML if valid day type is already found, otherwise refreshes normally
+            //Refreshes schedule
             inMain = true;
             schedule.inMain = true;
-            View settingsFragment = findViewById(R.id.settings_fragement);
-            View scheduleView = findViewById(R.id.schedule_include);
-            settingsFragment.setVisibility(View.GONE);
-            scheduleView.setVisibility(View.VISIBLE);
+            setViewVisible(0);
             if (!schedule.running) {
                 schedule.fetchXML();
             }
         } else if (id == R.id.nav_news) {
-
+            inMain = false;
+            schedule.inMain = false;
+            setViewVisible(1);
+            NewsSetter news = new NewsSetter(this);
+            news.fetchXML();
         } else if (id == R.id.nav_grille) {
-
-        } else if (id == R.id.nav_exam_schedule) {
-
+            Uri uri = Uri.parse("http://www.sagedining.com/menus/trinitypreparatory");
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            startActivity(intent);
         } else if (id == R.id.nav_settings) {
             //Change content view to settings
             inMain = false;
             schedule.inMain = false;
-            View settingsFragment = findViewById(R.id.settings_fragement);
-            View scheduleView = findViewById(R.id.schedule_include);
-            settingsFragment.setVisibility(View.VISIBLE);
-            scheduleView.setVisibility(View.GONE);
+            setViewVisible(2);
             //Add settings fragment to navigation
             getFragmentManager().beginTransaction()
                     .replace(R.id.settings_fragement, new SettingsFragment())

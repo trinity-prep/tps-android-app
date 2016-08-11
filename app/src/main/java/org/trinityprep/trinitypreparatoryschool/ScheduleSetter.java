@@ -3,7 +3,6 @@ package org.trinityprep.trinitypreparatoryschool;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
@@ -81,7 +80,7 @@ public class ScheduleSetter {
     public boolean running;
     //True when refresh thread running, false otherwise
     private boolean refreshRunning;
-    //True when in content_main, false otherwise
+    //True when in schedule_layout, false otherwise
     public boolean inMain;
     //
     Thread XMLThread;
@@ -292,7 +291,7 @@ public class ScheduleSetter {
         }
         //Get current # of minutes since 12:00 AM
         Calendar date = Calendar.getInstance();
-        int minute = 600; //(date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
+        int minute = (date.get(Calendar.HOUR_OF_DAY) * 60) + date.get(Calendar.MINUTE);
 
         Integer[] startTime = startTimes.get(index);
         Integer[] endTime = endTimes.get(index);
@@ -315,8 +314,10 @@ public class ScheduleSetter {
             if(minute < startTime[i]) {
                 if(minute < endTime[i - 1]) {
                     currentPeriod = i-1;
+                    break;
                 } else {
                     currentPeriod = i;
+                    break;
                 }
             }
         }
@@ -329,7 +330,7 @@ public class ScheduleSetter {
     private void setScheduleMS(String dayType) {
         //Start and end times of periods on different day types in minutes since 0000 (12 AM)
         Integer[] dayAStart = {470, 479, 527, 575, 604, 652, 700, 749, 796, 844, 888};
-        Integer[] dayAEnd = {475, 523, 571, 600, 548, 696, 744, 792, 840, 888, 915};
+        Integer[] dayAEnd = {475, 523, 571, 600, 648, 696, 744, 792, 840, 888, 915};
         String[] dayAPeriods = {"Advisory", "1st Period", "2nd Period",
                 "Assembly/Break", "3rd Period", "4th Period", "MS Lunch",
                 "5th Period", "6th Period", "7th Period", "Study Period"};
@@ -422,6 +423,7 @@ public class ScheduleSetter {
         //Set schedule title to current day type
         TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
         scheduleText.setText("Day " + dayType);
+
         if(minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
             Toast.makeText(activity, "School is out",
                     Toast.LENGTH_LONG).show();
@@ -435,10 +437,10 @@ public class ScheduleSetter {
             if(minute < startTime[i]) {
                 if(minute < endTime[i - 1]) {
                     currentPeriod = i-1;
-                    return;
+                    break;
                 } else {
                     currentPeriod = i;
-                    return;
+                    break;
                 }
             }
         }
@@ -450,7 +452,7 @@ public class ScheduleSetter {
      * POSTCONDITION: Creates a table containing all periods and times
      * if a schedule table is already created (scheduleRowIds != null), delete and replace existing schedule table*/
     private void createScheduleTable(String[] periods, Integer[] startTimes, Integer[] endTimes, int activeIndex) {
-        // Find TableLayout defined in content_main.xml
+        // Find TableLayout defined in schedule_layout.xml
         TableLayout tl = (TableLayout) activity.findViewById(R.id.schedule_table);
         // If schedule table already exists, delete all children of schedule_table
         if(tableExists) {
@@ -509,7 +511,7 @@ public class ScheduleSetter {
             // Add divider if not last
             if(i < periods.length - 1) {
                 ViewStub stub2 = new ViewStub(activity);
-                stub2.setLayoutResource(R.layout.schedule_table_divider);
+                stub2.setLayoutResource(R.layout.table_divider);
                 // Add view stub to schedule_table
                 try {
                     tl.addView(stub2, new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.MATCH_PARENT));
