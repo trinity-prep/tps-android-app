@@ -297,14 +297,13 @@ public class ScheduleSetter {
         Integer[] endTime = endTimes.get(index);
         String[] periodsDay = periods.get(index);
 
-        //Set schedule title to current day type
-        TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
-        scheduleText.setText("Day " + dayType);
-
         if(minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
             Toast.makeText(activity, "School is out",
                     Toast.LENGTH_LONG).show();
             createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), -1);
+            //Set schedule title to current day type
+            TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
+            scheduleText.setText("Day " + dayType);
             return;
         }
 
@@ -321,6 +320,10 @@ public class ScheduleSetter {
                 }
             }
         }
+
+        //Set schedule title to current day type
+        TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
+        scheduleText.setText("Day " + dayType + " (" + (endTime[currentPeriod] - minute) + " minutes left");
 
         createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), currentPeriod);
     }
@@ -420,14 +423,13 @@ public class ScheduleSetter {
         Integer[] endTime = endTimes.get(index);
         String[] periodsDay = periods.get(index);
 
-        //Set schedule title to current day type
-        TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
-        scheduleText.setText("Day " + dayType);
-
         if(minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
             Toast.makeText(activity, "School is out",
                     Toast.LENGTH_LONG).show();
             createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), -1);
+            //Set schedule title to current day type
+            TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
+            scheduleText.setText("Day " + dayType);
             return;
         }
 
@@ -444,6 +446,10 @@ public class ScheduleSetter {
                 }
             }
         }
+
+        //Set schedule title to current day type
+        TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
+        scheduleText.setText("Day " + dayType + " (" + (endTime[currentPeriod] - minute) + " minutes left");
 
         createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), currentPeriod);
     }

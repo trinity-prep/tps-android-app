@@ -1,10 +1,12 @@
 package org.trinityprep.trinitypreparatoryschool;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
@@ -82,8 +84,12 @@ public class NewsSetter {
     public boolean inMain;
     Thread XMLThread;
     private boolean tableExists = false;
+    private ArrayList<Integer> rowIds;
+    ArrayList<String> links;
 
     public NewsSetter (Activity mainActivity) {
+        links = new ArrayList<>();
+        rowIds = new ArrayList<>();
         activity = mainActivity;
         running = false;
     }
@@ -149,7 +155,7 @@ public class NewsSetter {
     /* PRECONDITION: periods[] and times[] are of the same length
      * POSTCONDITION: Creates a table containing all periods and times
      * if a schedule table is already created (scheduleRowIds != null), delete and replace existing schedule table*/
-    private void createNewsTable(ArrayList<String> titles, ArrayList<String> links, ArrayList<String> dates, ArrayList<String> imageLinks) {
+    private void createNewsTable(ArrayList<String> titles, final ArrayList<String> links, ArrayList<String> dates, ArrayList<String> imageLinks) {
         // Find TableLayout defined in schedule_layout.xml
         TableLayout tl = (TableLayout) activity.findViewById(R.id.news_table);
         // If schedule table already exists, delete all children of schedule_table
@@ -179,6 +185,19 @@ public class NewsSetter {
             int rowId = View.generateViewId();
             try {
                 trText.setId(rowId);
+                rowIds.add(rowId);
+                trText.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        for(int i = 0; (i < links.size() && i < rowIds.size()); i++) {
+                            if(v.getId() == rowIds.get(i)) {
+                                Uri uri = Uri.parse(links.get(i));
+                                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                activity.startActivity(intent);
+                            }
+                        }
+                    }
+                });
             } catch(Exception e) {
                 Toast.makeText(activity, "Critical error",
                         Toast.LENGTH_LONG).show();
@@ -189,7 +208,7 @@ public class NewsSetter {
             //Bitmap map = getBitmapFromURL(imageLinks.get(i));
             //img.setImageBitmap(map);
             // Set other text
-            TextView title = (TextView) trText.getChildAt(1);
+            TextView title = (TextView) trText.getChildAt(0);
             String date = dates.get(i);
             Calendar cal = Calendar.getInstance();
             date = date.substring(0, date.indexOf(Integer.toString(cal.get(Calendar.YEAR))) + 4);
@@ -232,7 +251,6 @@ public class NewsSetter {
         int event;
         String text = null;
         ArrayList<String> titles = new ArrayList<>();
-        ArrayList<String> links = new ArrayList<>();
         ArrayList<String> dates = new ArrayList<>();
         ArrayList<String> imageLinks = new ArrayList<>();
         boolean inItems = false;
@@ -276,6 +294,10 @@ public class NewsSetter {
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    View scrollView = activity.findViewById(R.id.news_scroll);
+                    scrollView.setVisibility(View.VISIBLE);
+                    View loading = activity.findViewById(R.id.loadingPanel);
+                    loading.setVisibility(View.GONE);
                     createNewsTable(titles1, links1, dates1, imageLinks1);
                 }
             });
