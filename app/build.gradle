@@ -1,16 +1,9 @@
 apply plugin: 'com.android.application'
 
 android {
-    signingConfigs {
-        Release {
-            keyAlias 'TPS Android Key'
-            keyPassword 'gQ$c{NB-j3]6pYGln'
-            storeFile file('C:/Users/Dominic Martinez/Documents/android_app_keystore.jks')
-            storePassword 'gQ$c{NB-j3]6pYGln'
-        }
-    }
     compileSdkVersion 23
     buildToolsVersion "23.0.3"
+
     defaultConfig {
         applicationId "org.trinityprep.trinitypreparatoryschool"
         minSdkVersion 19
@@ -22,7 +15,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.Release
         }
         debug {
             debuggable true
@@ -31,7 +23,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.4.0'
     compile 'com.android.support:design:23.4.0'
