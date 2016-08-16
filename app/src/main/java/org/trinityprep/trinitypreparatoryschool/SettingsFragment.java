@@ -6,8 +6,8 @@ import android.preference.PreferenceFragment;
 /**
  * Created by bmndo on 6/13/2016.
  */
-public class SettingsFragment extends PreferenceFragment{
-    public static final String KEY_SCHOOL_PREF= "pref_school_level";
+public class SettingsFragment extends PreferenceFragment {
+    public static final String KEY_SCHOOL_PREF = "pref_school_level";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

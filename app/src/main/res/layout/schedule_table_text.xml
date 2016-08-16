@@ -1,0 +1,26 @@
+<TableRow xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/schedule_row_text_template"
+    android:layout_width="wrap_content"
+    android:layout_height="fill_parent"
+    android:paddingBottom="13dp"
+    android:paddingTop="13dp">
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_column="0"
+        android:layout_weight="1"
+        android:text=""
+        android:textColor="@color/text"
+        android:textSize="22sp" />
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_column="2"
+        android:layout_weight="1"
+        android:text=""
+        android:textAlignment="textEnd"
+        android:textColor="@color/text"
+        android:textSize="22sp" />
+</TableRow>
