@@ -1,81 +1,74 @@
 package org.trinityprep.trinitypreparatoryschool;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.net.Uri;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewStub;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.nostra13.universalimageloader.core.ImageLoader;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import javax.xml.transform.URIResolver;
-
 /**
  * Created by Dominic martinez on 6/13/2016.
- *
+ * <p/>
  * Constructor:
- *      ScheduleSetter (Activity mainActivity //pass on MainActivity in order to set schedule text)
- *
+ * ScheduleSetter (Activity mainActivity //pass on MainActivity in order to set schedule text)
+ * <p/>
  * Methods:
- *      public String fetchXML() {
- *          Creates connection to XML file and runs helper methods to set schedule
- *          Logs error message if unable to connect
- *      }
- *
- *      public void noSchedule() {
- *          Sets schedule text to "No Schedule" if no valid schedule is found on server
- *      }
- *
- *      public void setSchedule(String dayType) {
- *          Depending on application settings, calls setScheduleMS(dayType) or setScheduleUS(dayType)
- *          Sets schedule_title to an error if preferences are invalid
- *      }
- *
- *      private void setScheduleUS(String dayType) {
- *          Given a valid day type, sets schedule_title to the current period for Upper School
- *          If between periods, outputs "Going from (period1) to (period2)
- *      }
- *
- *      private void setScheduleMS(String dayType) {
- *          Given a valid day type, sets schedule_title to the current period for Middle School
- *          If between periods, outputs "Going from (period1) to (period2)
- *      }
- *
- *      private void createScheduleTable(String[] periods, Integer[] startTimes, Integer[] endTimes, int activeIndex) {
- *          Populates schedule table with given data, and highlights the row that corresponds to activeIndex.
- *          Any invalid activeIndex will cause no row to be highlighted, although it is HIGHLY recommended to
- *          set activeIndex to -1 if you do not want any row to be highlighted
- *      }
- *
- *      private String parseXML(XMLPullParser myParser) {
- *          Given an XMLPullParser connected to the calendar XML feed, finds current day type
- *          If day type for current day found, outputs day A-F. Otherwise, outputs null
- *      }
+ * public String fetchXML() {
+ * Creates connection to XML file and runs helper methods to set schedule
+ * Logs error message if unable to connect
+ * }
+ * <p/>
+ * public void noSchedule() {
+ * Sets schedule text to "No Schedule" if no valid schedule is found on server
+ * }
+ * <p/>
+ * public void setSchedule(String dayType) {
+ * Depending on application settings, calls setScheduleMS(dayType) or setScheduleUS(dayType)
+ * Sets schedule_title to an error if preferences are invalid
+ * }
+ * <p/>
+ * private void setScheduleUS(String dayType) {
+ * Given a valid day type, sets schedule_title to the current period for Upper School
+ * If between periods, outputs "Going from (period1) to (period2)
+ * }
+ * <p/>
+ * private void setScheduleMS(String dayType) {
+ * Given a valid day type, sets schedule_title to the current period for Middle School
+ * If between periods, outputs "Going from (period1) to (period2)
+ * }
+ * <p/>
+ * private void createScheduleTable(String[] periods, Integer[] startTimes, Integer[] endTimes, int activeIndex) {
+ * Populates schedule table with given data, and highlights the row that corresponds to activeIndex.
+ * Any invalid activeIndex will cause no row to be highlighted, although it is HIGHLY recommended to
+ * set activeIndex to -1 if you do not want any row to be highlighted
+ * }
+ * <p/>
+ * private String parseXML(XMLPullParser myParser) {
+ * Given an XMLPullParser connected to the calendar XML feed, finds current day type
+ * If day type for current day found, outputs day A-F. Otherwise, outputs null
+ * }
  */
 public class NewsSetter {
 
-    //Activity used to set schedule_title
-    private Activity activity;
+    //Boolean for if user is currently in webview
+    public static boolean inWeb = false;
     //URL to grab XML from
     private final String newsURL = "http://www.trinityprep.org/rss.cfm?news=10";
     //True when currently finding schedule, false otherwise
@@ -83,11 +76,13 @@ public class NewsSetter {
     //True when in schedule_layout, false otherwise
     public boolean inMain;
     Thread XMLThread;
+    ArrayList<String> links;
+    //Activity used to set schedule_title
+    private MainActivity activity;
     private boolean tableExists = false;
     private ArrayList<Integer> rowIds;
-    ArrayList<String> links;
 
-    public NewsSetter (Activity mainActivity) {
+    public NewsSetter(MainActivity mainActivity) {
         links = new ArrayList<>();
         rowIds = new ArrayList<>();
         activity = mainActivity;
@@ -101,6 +96,15 @@ public class NewsSetter {
             @Override
             public void run() {
                 try {
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            View scrollView = activity.findViewById(R.id.news_scroll);
+                            scrollView.setVisibility(View.GONE);
+                            View loading = activity.findViewById(R.id.news_loader);
+                            loading.setVisibility(View.VISIBLE);
+                        }
+                    });
                     URL url = new URL(newsURL);
                     //Opens connection
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -114,7 +118,7 @@ public class NewsSetter {
 
                     // Starts the query
                     conn.connect();
-                    if(conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                         stream = conn.getInputStream();
                     } else {
                         //Ends thread if unable to obtain proper connection
@@ -142,16 +146,6 @@ public class NewsSetter {
         thread.start();
     }
 
-    public void noSchedule() {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TextView schedule = (TextView) activity.findViewById(R.id.schedule_title);
-                schedule.setText("No Schedule");
-            }
-        });
-    }
-
     /* PRECONDITION: periods[] and times[] are of the same length
      * POSTCONDITION: Creates a table containing all periods and times
      * if a schedule table is already created (scheduleRowIds != null), delete and replace existing schedule table*/
@@ -159,24 +153,24 @@ public class NewsSetter {
         // Find TableLayout defined in schedule_layout.xml
         TableLayout tl = (TableLayout) activity.findViewById(R.id.news_table);
         // If schedule table already exists, delete all children of schedule_table
-        if(tableExists) {
+        if (tableExists) {
             try {
                 tl.removeAllViews();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Toast.makeText(activity, "Critical error",
                         Toast.LENGTH_LONG).show();
                 return;
             }
         }
         tableExists = true;
-        for(int i = 0; (i < titles.size() && i < links.size() && i < dates.size() && i < imageLinks.size()); i++) {
+        for (int i = 0; (i < titles.size() && i < links.size() && i < dates.size() && i < imageLinks.size()); i++) {
             // Import TableRow that contains text elements and inflate
             ViewStub stub = new ViewStub(activity);
             stub.setLayoutResource(R.layout.news_table_text);
             // Add view stub to schedule_table
             try {
                 tl.addView(stub, new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT));
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Toast.makeText(activity, "Critical error",
                         Toast.LENGTH_LONG).show();
                 return;
@@ -189,61 +183,73 @@ public class NewsSetter {
                 trText.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        for(int i = 0; (i < links.size() && i < rowIds.size()); i++) {
-                            if(v.getId() == rowIds.get(i)) {
-                                Uri uri = Uri.parse(links.get(i));
-                                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                activity.startActivity(intent);
+                        for (int i = 0; (i < links.size() && i < rowIds.size()); i++) {
+                            if (v.getId() == rowIds.get(i)) {
+                                try {
+                                    WebView webNews = (WebView) activity.findViewById(R.id.news_webview);
+                                    View scrollView = activity.findViewById(R.id.news_scroll);
+                                    View loadingView = activity.findViewById(R.id.news_loader);
+                                    webNews.setVisibility(View.GONE);
+                                    scrollView.setVisibility(View.GONE);
+                                    loadingView.setVisibility(View.VISIBLE);
+                                    webNews.setWebChromeClient(new WebChromeClient());
+                                    webNews.setWebViewClient(new WebViewClient() {
+
+                                        public void onPageFinished(WebView view, String url) {
+                                            WebView webGrille = (WebView) activity.findViewById(R.id.news_webview);
+                                            View loadingView = activity.findViewById(R.id.news_loader);
+                                            webGrille.setVisibility(View.VISIBLE);
+                                            loadingView.setVisibility(View.GONE);
+                                        }
+                                    });
+                                    webNews.clearCache(true);
+                                    webNews.clearHistory();
+                                    webNews.setWebContentsDebuggingEnabled(false);
+                                    webNews.getSettings().setJavaScriptEnabled(true);
+                                    webNews.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+                                    webNews.getSettings().setBuiltInZoomControls(true);
+                                    webNews.getSettings().setDisplayZoomControls(false);
+                                    webNews.loadUrl(links.get(i));
+                                    inWeb = true;
+                                    activity.setRefreshMenuVisiblity(false);
+                                } catch (Exception e) {
+                                    Toast.makeText(activity, "WebView error", Toast.LENGTH_LONG).show();
+                                    Log.e("Error", "WebView", e);
+                                }
                             }
                         }
                     }
                 });
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Toast.makeText(activity, "Critical error",
                         Toast.LENGTH_LONG).show();
                 return;
             }
             // Get ImageView and set image
-            //ImageView img = (ImageView) trText.getChildAt(0);
-            //Bitmap map = getBitmapFromURL(imageLinks.get(i));
-            //img.setImageBitmap(map);
-            // Set other text
-            TextView title = (TextView) trText.getChildAt(0);
+            ImageLoader imgLoader = ImageLoader.getInstance();
+            ImageView img = (ImageView) trText.getChildAt(0);
+            imgLoader.displayImage(imageLinks.get(i), img);
+            // Set title
+            TextView title = (TextView) trText.getChildAt(1);
             String date = dates.get(i);
             Calendar cal = Calendar.getInstance();
             date = date.substring(0, date.indexOf(Integer.toString(cal.get(Calendar.YEAR))) + 4);
             title.setText(titles.get(i) + "\n\n" + date);
 
             // Add divider if not last
-            if(i < titles.size() - 1) {
+            if (i < titles.size() - 1) {
                 ViewStub stub2 = new ViewStub(activity);
                 stub2.setLayoutResource(R.layout.table_divider);
                 // Add view stub to schedule_table
                 try {
                     tl.addView(stub2, new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.MATCH_PARENT));
                     stub2.inflate();
-                } catch(Exception e) {
+                } catch (Exception e) {
                     Toast.makeText(activity, "Critical error",
                             Toast.LENGTH_LONG).show();
                     return;
                 }
             }
-        }
-    }
-
-    public Bitmap getBitmapFromURL(String src) {
-        try {
-            java.net.URL url = new java.net.URL(src);
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.connect();
-            InputStream input = connection.getInputStream();
-            Bitmap myBitmap = BitmapFactory.decodeStream(input);
-            return myBitmap;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
         }
     }
 
@@ -296,7 +302,7 @@ public class NewsSetter {
                 public void run() {
                     View scrollView = activity.findViewById(R.id.news_scroll);
                     scrollView.setVisibility(View.VISIBLE);
-                    View loading = activity.findViewById(R.id.loadingPanel);
+                    View loading = activity.findViewById(R.id.news_loader);
                     loading.setVisibility(View.GONE);
                     createNewsTable(titles1, links1, dates1, imageLinks1);
                 }

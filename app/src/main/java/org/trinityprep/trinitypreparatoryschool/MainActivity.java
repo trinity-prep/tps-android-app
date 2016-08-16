@@ -1,34 +1,23 @@
 package org.trinityprep.trinitypreparatoryschool;
 
-import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
-import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.widget.ViewUtils;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.Menu;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TableLayout;
-import android.widget.TableRow;
-import android.widget.TextView;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Toast;
-import android.widget.ViewFlipper;
 
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-import org.w3c.dom.Text;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import java.util.ArrayList;
 
@@ -57,24 +46,47 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-    //Object for scheduler
-    ScheduleSetter schedule = new ScheduleSetter(this);
-    //True when content view is activity_main, false otherwise
-    private boolean inMain = true;
-    //Contains dayType
-    private String dayType = null;
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient client;
+    //Index variables
+    public static final int SCHEDULE_INDEX = 0;
+    public static final int NEWS_INDEX = 1;
+    public static final int GRILLE_INDEX = 2;
+    public static final int SETTINGS_INDEX = 3;
     //Contains array of ids for rows in schedule_table
     private static ArrayList<Integer> scheduleRowIds = null;
+    //String that contains link to load for grille menu
+    private final String GRILLE_URL = "http://www.sagedining.com/menus/trinitypreparatory";
+    //Boolean array for activity
+    public ArrayList<Boolean> activities;
+    //Object for scheduler
+    ScheduleSetter schedule;
+    //Object for news
+    NewsSetter news;
+    //Contains refresh menu
+    Menu refreshMenu;
+    //Booleans for activity
+    private boolean inSchedule = true;
+    private boolean inNews = false;
+    private boolean inGrille = false;
+    private boolean inSettings = false;
+    //Contains dayType
+    private String dayType = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //Initialize activity view, toolbar, and navbar
         super.onCreate(savedInstanceState);
+        //Initialize ImageLoader
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this).build();
+        ImageLoader.getInstance().init(config);
+        //Instantiate objects
+        schedule = new ScheduleSetter(this);
+        news = new NewsSetter(this);
+        //Populate boolean array for activity
+        activities = new ArrayList<>();
+        activities.add(inSchedule);
+        activities.add(inNews);
+        activities.add(inGrille);
+        activities.add(inSettings);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -89,9 +101,6 @@ public class MainActivity extends AppCompatActivity
         if (!schedule.running) {
             schedule.fetchXML();
         }
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     /* Recreates toolbar and navigation view
@@ -117,14 +126,28 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
+        } else if (news.inWeb) {
+            View webview = findViewById(R.id.news_webview);
+            View newsScroll = findViewById(R.id.news_scroll);
+            webview.setVisibility(View.GONE);
+            newsScroll.setVisibility(View.VISIBLE);
+            news.inWeb = false;
+            setRefreshMenuVisiblity(true);
         } else {
             super.onBackPressed();
         }
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        schedule.runRefresh = false;
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
+        refreshMenu = menu;
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
@@ -139,11 +162,20 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.action_refresh) {
             //Refreshes schedule
             //Call fetchXML to set schedule_title to current period if in main content and scheduler is not currently running
-            if (!schedule.running && inMain) {
+            if (activities.get(SCHEDULE_INDEX) && !schedule.running) {
                 schedule.fetchXML();
+            } else if (activities.get(NEWS_INDEX) && !news.running) {
+                news.fetchXML();
+            } else if (activities.get(GRILLE_INDEX)) {
+                try {
+                    WebView webGrille = (WebView) findViewById(R.id.grille_webview);
+                    webGrille.loadUrl(GRILLE_URL);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Refresh error", Toast.LENGTH_LONG).show();
+                    Log.e("Error", "Refresh", e);
+                }
             } else {
-                Toast.makeText(this, "Not in schedule",
-                        Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Refresh error", Toast.LENGTH_LONG).show();
             }
         }
 
@@ -153,21 +185,64 @@ public class MainActivity extends AppCompatActivity
     public void setViewVisible(int index) {
         ArrayList<View> viewArr = new ArrayList<>();
         /* 0 - Schedule view
-         * 1 - Settings fragment */
+         * 1 - News view
+         * 2 - Grille view
+         * 3 - Settings fragment */
         View scheduleView = findViewById(R.id.schedule_include);
         viewArr.add(scheduleView);
+
         View newsView = findViewById(R.id.news_include);
         viewArr.add(newsView);
-        View settingsFragment = findViewById(R.id.settings_fragement);
+
+        View grilleView = findViewById(R.id.grille_include);
+        viewArr.add(grilleView);
+
+        View settingsFragment = findViewById(R.id.settings_fragment);
         viewArr.add(settingsFragment);
 
-        for(int i = 0; i < viewArr.size(); i++) {
-            if(i == index) {
+        for (int i = 0; i < viewArr.size(); i++) {
+            if (i == index) {
                 viewArr.get(i).setVisibility(View.VISIBLE);
+                activities.set(i, true);
             } else {
                 viewArr.get(i).setVisibility(View.GONE);
+                activities.set(i, false);
             }
         }
+    }
+
+    public void createWebViewGrille() {
+        try {
+            WebView webGrille = (WebView) findViewById(R.id.grille_webview);
+            View loadingView = findViewById(R.id.grille_loader);
+            loadingView.setVisibility(View.VISIBLE);
+            webGrille.setVisibility(View.GONE);
+            webGrille.setWebChromeClient(new WebChromeClient());
+            webGrille.setWebViewClient(new WebViewClient() {
+
+                public void onPageFinished(WebView view, String url) {
+                    WebView webGrille = (WebView) findViewById(R.id.grille_webview);
+                    View loadingView = findViewById(R.id.grille_loader);
+                    loadingView.setVisibility(View.GONE);
+                    webGrille.setVisibility(View.VISIBLE);
+                }
+            });
+            webGrille.clearCache(true);
+            webGrille.clearHistory();
+            webGrille.setWebContentsDebuggingEnabled(false);
+            webGrille.getSettings().setJavaScriptEnabled(true);
+            webGrille.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+            webGrille.getSettings().setBuiltInZoomControls(true);
+            webGrille.getSettings().setDisplayZoomControls(false);
+            webGrille.loadUrl(GRILLE_URL);
+        } catch (Exception e) {
+            Toast.makeText(this, "WebView error", Toast.LENGTH_LONG).show();
+            Log.e("Error", "WebView", e);
+        }
+    }
+
+    public void setRefreshMenuVisiblity(boolean visible) {
+        refreshMenu.setGroupVisible(R.id.refresh_menu_group, visible);
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
@@ -177,31 +252,27 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_schedule) {
+            setRefreshMenuVisiblity(true);
             //Refreshes schedule
-            inMain = true;
-            schedule.inMain = true;
-            setViewVisible(0);
+            setViewVisible(SCHEDULE_INDEX);
             if (!schedule.running) {
                 schedule.fetchXML();
             }
         } else if (id == R.id.nav_news) {
-            inMain = false;
-            schedule.inMain = false;
-            setViewVisible(1);
-            NewsSetter news = new NewsSetter(this);
+            setRefreshMenuVisiblity(true);
+            setViewVisible(NEWS_INDEX);
             news.fetchXML();
         } else if (id == R.id.nav_grille) {
-            Uri uri = Uri.parse("http://www.sagedining.com/menus/trinitypreparatory");
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-            startActivity(intent);
+            setRefreshMenuVisiblity(true);
+            setViewVisible(GRILLE_INDEX);
+            createWebViewGrille();
         } else if (id == R.id.nav_settings) {
             //Change content view to settings
-            inMain = false;
-            schedule.inMain = false;
-            setViewVisible(2);
+            setRefreshMenuVisiblity(false);
+            setViewVisible(SETTINGS_INDEX);
             //Add settings fragment to navigation
             getFragmentManager().beginTransaction()
-                    .replace(R.id.settings_fragement, new SettingsFragment())
+                    .replace(R.id.settings_fragment, new SettingsFragment())
                     .commit();
         }
 
@@ -210,43 +281,4 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client.connect();
-        Action viewAction = Action.newAction(
-                Action.TYPE_VIEW, // TODO: choose an action type.
-                "Main Page", // TODO: Define a title for the content shown.
-                // TODO: If you have web page content that matches this app activity's content,
-                // make sure this auto-generated web page URL is correct.
-                // Otherwise, set the URL to null.
-                Uri.parse("http://host/path"),
-                // TODO: Make sure this auto-generated app URL is correct.
-                Uri.parse("android-app://org.trinityprep.trinitypreparatoryschool/http/host/path")
-        );
-        AppIndex.AppIndexApi.start(client, viewAction);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        Action viewAction = Action.newAction(
-                Action.TYPE_VIEW, // TODO: choose an action type.
-                "Main Page", // TODO: Define a title for the content shown.
-                // TODO: If you have web page content that matches this app activity's content,
-                // make sure this auto-generated web page URL is correct.
-                // Otherwise, set the URL to null.
-                Uri.parse("http://host/path"),
-                // TODO: Make sure this auto-generated app URL is correct.
-                Uri.parse("android-app://org.trinityprep.trinitypreparatoryschool/http/host/path")
-        );
-        AppIndex.AppIndexApi.end(client, viewAction);
-        client.disconnect();
-    }
 }
