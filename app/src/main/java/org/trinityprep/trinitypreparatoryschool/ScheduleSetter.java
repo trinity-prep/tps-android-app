@@ -89,6 +89,7 @@ public class ScheduleSetter {
         activity = mainActivity;
         running = false;
         refreshRunning = false;
+        runRefresh = true;
     }
 
     /* Establishes connection to RSS feed, creates XML parser, passes parser to parseXML()
@@ -301,10 +302,7 @@ public class ScheduleSetter {
         Integer[] startTime = startTimes.get(index);
         Integer[] endTime = endTimes.get(index);
         String[] periodsDay = periods.get(index);
-
         if (minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
-            Toast.makeText(activity, "School is out",
-                    Toast.LENGTH_SHORT).show();
             createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), -1);
             //Set schedule title to current day type
             TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
@@ -324,6 +322,12 @@ public class ScheduleSetter {
                     break;
                 }
             }
+        }
+        if(currentPeriod == -1 && minute < endTime[endTime.length - 1]) {
+            currentPeriod = endTime.length - 1;
+        } else if(currentPeriod == -1) {
+            Toast.makeText(activity, "Critical Error", Toast.LENGTH_SHORT).show();
+            return;
         }
 
         //Set schedule title to current day type
@@ -436,8 +440,6 @@ public class ScheduleSetter {
         String[] periodsDay = periods.get(index);
 
         if (minute < startTime[0] || minute >= endTime[endTime.length - 1]) {
-            Toast.makeText(activity, "School is out",
-                    Toast.LENGTH_SHORT).show();
             createScheduleTable(periods.get(index), startTimes.get(index), endTimes.get(index), -1);
             //Set schedule title to current day type
             TextView scheduleText = (TextView) activity.findViewById(R.id.schedule_title);
@@ -457,6 +459,12 @@ public class ScheduleSetter {
                     break;
                 }
             }
+        }
+        if(currentPeriod == -1 && minute < endTime[endTime.length - 1]) {
+            currentPeriod = endTime.length - 1;
+        } else if(currentPeriod == -1) {
+            Toast.makeText(activity, "Critical Error", Toast.LENGTH_SHORT).show();
+            return;
         }
 
         //Set schedule title to current day type
