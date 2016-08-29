@@ -145,8 +145,9 @@ public class ScheduleSetter {
                 running = false;
             }
         });
-        running = true;
-        thread.start();
+        //running = true;
+        //thread.start();
+        setSchedule("F");
     }
 
     public void noSchedule() {
@@ -206,7 +207,7 @@ public class ScheduleSetter {
     private void setScheduleUS(String dayType) {
         //Start and end times of periods on different day types in minutes since 0000 (12 AM)
         Integer[] dayAStart = {470, 479, 527, 575, 604, 652, 700, 749, 796, 844, 888};
-        Integer[] dayAEnd = {475, 523, 571, 600, 548, 696, 744, 792, 840, 888, 915};
+        Integer[] dayAEnd = {475, 523, 571, 600, 648, 696, 744, 792, 840, 888, 915};
         String[] dayAPeriods = {"Advisory", "1st Period", "2nd Period",
                 "Assembly/Break", "3rd Period", "4th Period", "5th Period",
                 "US Lunch", "6th Period", "7th Period", "Study Period"};
@@ -349,8 +350,8 @@ public class ScheduleSetter {
         Integer[] dayBStart = {470, 479, 563, 592, 676, 720, 804, 888};
         Integer[] dayBEnd = {475, 559, 588, 672, 716, 800, 884, 915};
         String[] dayBPeriods = {"Advisory", "1st Period",
-                "MS Break", "3rd Period", "5th Period",
-                "US Lunch", "7th Period", "Study Period"};
+                "MS Break", "3rd Period", "MS Lunch",
+                "5th Period", "7th Period", "Study Period"};
         Integer[] dayCStart = {470, 504, 588, 621, 705, 753, 801, 885};
         Integer[] dayCEnd = {500, 584, 617, 701, 749, 797, 881, 915};
         String[] dayCPeriods = {"Advisory", "2nd Period",
