@@ -145,9 +145,8 @@ public class ScheduleSetter {
                 running = false;
             }
         });
-        //running = true;
-        //thread.start();
-        setSchedule("F");
+        running = true;
+        thread.start();
     }
 
     public void noSchedule() {
