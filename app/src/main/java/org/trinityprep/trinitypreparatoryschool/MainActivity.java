@@ -35,13 +35,9 @@ import java.util.ArrayList;
 *       Denise Musselwhite
 *       Rita Kniele
 *
-*  Current Version: 0.1.0
-*  Current Version Changelog: (access full log in changelog.txt)
-*       Version 0.1.0; State: Closed Alpha
-*       - Added schedule for seeing current period - DM
-*       - Added schedule refreshing for automatic period changes - DM
-*       - Added settings menu and option to choose between MS and US - DM
-*       - Added documentation to code and GitHub - DM
+* Version 1.0.1; State: Open Beta
+* 	    - Update Gradle - DM
+* 	    - Fixed schedule error that would cause a "No Schedule" error (unremoved debug statement) - DM
 */
 
 public class MainActivity extends AppCompatActivity
@@ -142,6 +138,13 @@ public class MainActivity extends AppCompatActivity
     protected void onPause() {
         super.onPause();
         schedule.runRefresh = false;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        schedule.fetchXML();
+        schedule.runRefresh = true;
     }
 
     @Override

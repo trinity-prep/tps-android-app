@@ -3,3 +3,16 @@ Version 0.1.0; State: Closed Alpha
 *       - Added schedule refreshing for automatic period changes - DM
 *       - Added settings menu and option to choose between MS and US - DM
 *       - Added documentation to code and GitHub - DM
+
+Version 1.0.0; State: Closed Beta
+*	- Turned schedule into a table format that displays schedule for entire day - DM
+* 	- Added app icon - DM
+* 	- Added news menu - DM
+* 	- Added grille menu - DM
+*  	- Optimized menu switching - DM
+* 	- Optimized schedule threading - DM
+* 	- Added TPS logo to navigation drawer - DM
+
+Version 1.0.1; State: Open Beta
+* 	- Update Gradle - DM
+* 	- Fixed schedule error that would cause a "No Schedule" error (unremoved debug statement) - DM

@@ -6,7 +6,7 @@
     <View
         android:id="@+id/line1"
         android:layout_width="match_parent"
-        android:layout_height="1dip"
+        android:layout_height="2dip"
         android:layout_weight="1"
         android:background="@color/divider"
         android:padding="2dip" />
