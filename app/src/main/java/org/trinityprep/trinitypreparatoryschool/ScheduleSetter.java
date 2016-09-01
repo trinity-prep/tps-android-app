@@ -597,7 +597,12 @@ public class ScheduleSetter {
                         } else if (myParser.getName().equalsIgnoreCase("description")) {
                             String[] calendarMonthsString = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
                             Calendar c = Calendar.getInstance();
-                            String date = " " + c.get(Calendar.DAY_OF_MONTH) + " " + calendarMonthsString[c.get(Calendar.MONTH)] + " " + c.get(Calendar.YEAR);
+                            String date = c.get(Calendar.DAY_OF_MONTH) + " " + calendarMonthsString[c.get(Calendar.MONTH)] + " " + c.get(Calendar.YEAR);
+                            if(c.get(Calendar.DAY_OF_MONTH) < 10) {
+                                date = " 0" + date;
+                            } else {
+                                date = " " + date;
+                            }
                             if (text != null) {
                                 if (text.toLowerCase().contains(date) && foundDayType) {
                                     return dayType;
